@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en" class="scanlines">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MXYCOR — Cinematic Real-Time Visual Experiences</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], rajdhani: ['Rajdhani', 'sans-serif'] },
+                    colors: {
+                        mx: {
+                            green: '#ACBC37', dark: '#050505', card: '#0c0c0c',
+                            border: '#1a1a1a', cyan: '#00f0ff', purple: '#a855f7',
+                            surface: '#111111'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ===== BASE RESPONSIVE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #050505;
+            color: #fafafa;
+            overflow-x: hidden;
+            cursor: none;
+        }
+        ::selection {
+            background: rgba(172, 188, 55, 0.3);
+            color: #fff;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ACBC37;
+        }
+
+        .scanlines::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.015) 2px, rgba(0, 0, 0, 0.015) 4px);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        #progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ACBC37, #00f0ff);
+            z-index: 10001;
+            transition: width 0.1s linear;
+        }
+
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #050505;
+            z-index: 100000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        #loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        #loader-bar {
+            width: 200px;
+            height: 2px;
+            background: #1a1a1a;
+            border-radius: 1px;
+            overflow: hidden;
+            margin-top: 24px;
+        }
+        #loader-fill {
+            height: 100%;
+            width: 0%;
+            background: #ACBC37;
+            transition: width 0.3s ease;
+        }
+
+        .glitch {
+            position: relative;
+            display: inline-block;
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .glitch::before {
+            color: #00f0ff;
+            animation: glitch1 4s infinite linear alternate-reverse;
+            clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+        }
+        .glitch::after {
+            color: #a855f7;
+            animation: glitch2 3.5s infinite linear alternate-reverse;
+            clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+        }
+        @keyframes glitch1 {
+            0%,
+            100% {
+                transform: translate(0);
+                opacity: 0.8;
+            }
+            10% {
+                transform: translate(-3px, 1px);
+            }
+            20% {
+                transform: translate(2px, -1px);
+                opacity: 0.9;
+            }
+            30% {
+                transform: translate(0);
+                opacity: 0.7;
+            }
+            50% {
+                transform: translate(3px, 2px);
+                opacity: 0.85;
+            }
+            70% {
+                transform: translate(-1px, -2px);
+                opacity: 0.75;
+            }
+            90% {
+                transform: translate(2px, 1px);
+                opacity: 0.9;
+            }
+        }
+        @keyframes glitch2 {
+            0%,
+            100% {
+                transform: translate(0);
+                opacity: 0.7;
+            }
+            15% {
+                transform: translate(3px, -1px);
+                opacity: 0.85;
+            }
+            35% {
+                transform: translate(-2px, 2px);
+                opacity: 0.7;
+            }
+            55% {
+                transform: translate(1px, -1px);
+                opacity: 0.9;
+            }
+            75% {
+                transform: translate(-3px, 1px);
+                opacity: 0.75;
+            }
+        }
+
+        .hero-bg {
+            background:
+                linear-gradient(rgba(172, 188, 55, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(172, 188, 55, 0.025) 1px, transparent 1px),
+                radial-gradient(ellipse at 20% 50%, rgba(172, 188, 55, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(0, 240, 255, 0.04) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 90%, rgba(168, 85, 247, 0.03) 0%, transparent 40%),
+                #050505;
+            background-size: 80px 80px, 80px 80px, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+        .hero-video {
+            filter: none;
+        }
+
+        .vignette::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 25%, #050505 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(30px);
+                opacity: 0;
+            }
+        }
+
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background: #ACBC37;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 100000;
+            mix-blend-mode: difference;
+            transition: transform 0.15s ease;
+        }
+        #cursor-ring {
+            width: 36px;
+            height: 36px;
+            border: 1.5px solid rgba(172, 188, 55, 0.4);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 100000;
+            transition: transform 0.25s ease, width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
+        }
+        #cursor-ring.hovering {
+            width: 56px;
+            height: 56px;
+            border-color: rgba(0, 240, 255, 0.5);
+        }
+        @media (pointer: coarse) {
+            #cursor-dot,
+            #cursor-ring {
+                display: none !important;
+            }
+            body {
+                cursor: auto;
+            }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 {
+            transition-delay: 0.1s;
+        }
+        .reveal-delay-2 {
+            transition-delay: 0.2s;
+        }
+        .reveal-delay-3 {
+            transition-delay: 0.3s;
+        }
+        .reveal-delay-4 {
+            transition-delay: 0.4s;
+        }
+
+        .portfolio-item {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .portfolio-item.hidden-item {
+            opacity: 0;
+            transform: scale(0.9);
+            pointer-events: none;
+            position: absolute;
+            visibility: hidden;
+        }
+        .portfolio-grid {
+            position: relative;
+        }
+
+        .card-glow {
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.4s ease;
+        }
+        .card-glow::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(172, 188, 55, 0.06), transparent 40%);
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .card-glow:hover::before {
+            opacity: 1;
+        }
+        .card-glow:hover {
+            border-color: rgba(172, 188, 55, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .port-card .port-overlay {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .port-card:hover .port-overlay {
+            opacity: 1;
+        }
+        .port-card img,
+        .port-card video {
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .port-card:hover img,
+        .port-card:hover video {
+            transform: scale(1.08);
+        }
+
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-shine::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 20%;
+            height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.6s ease;
+        }
+        .btn-shine:hover::after {
+            left: 120%;
+        }
+
+        .nav-glass {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(5, 5, 5, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        .workflow-line {
+            background: linear-gradient(to bottom, #ACBC37, rgba(172, 188, 55, 0.1));
+            transform-origin: top;
+            transform: scaleY(0);
+            transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cat-tab {
+            transition: all 0.3s ease;
+        }
+        .cat-tab.active {
+            color: #ACBC37;
+            border-color: #ACBC37;
+        }
+        .cat-tab:not(.active) {
+            color: #737373;
+            border-color: transparent;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+        @keyframes orbFloat {
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(30px, -40px) scale(1.1);
+            }
+            50% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+            75% {
+                transform: translate(40px, 30px) scale(1.05);
+            }
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #ACBC37;
+            border-radius: 50%;
+            position: relative;
+        }
+        .pulse-dot::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px solid #ACBC37;
+            animation: pulse 2s ease-out infinite;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(2.5);
+                opacity: 0;
+            }
+        }
+
+        .contact-link {
+            transition: all 0.3s ease;
+        }
+        .contact-link:hover {
+            border-color: #ACBC37;
+            background: rgba(172, 188, 55, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .crystal-glow {
+            animation: crystalPulse 4s ease-in-out infinite;
+        }
+        @keyframes crystalPulse {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 4px rgba(172, 188, 55, 0.3)) drop-shadow(0 0 8px rgba(0, 240, 255, 0.15));
+            }
+            50% {
+                filter: drop-shadow(0 0 8px rgba(172, 188, 55, 0.5)) drop-shadow(0 0 16px rgba(0, 240, 255, 0.25));
+            }
+        }
+
+        .play-btn {
+            opacity: 0;
+            transition: all 0.3s ease;
+            transform: scale(0.8);
+        }
+        .port-card:hover .play-btn {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .showreel-label {
+            background: linear-gradient(90deg, rgba(172, 188, 55, 0.15), transparent);
+            border-left: 2px solid #ACBC37;
+        }
+
+        /* ===== LIGHTBOX ===== */
+        #lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 100050;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s ease;
+            cursor: auto;
+        }
+        #lightbox.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #lb-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 85vh;
+            transform: scale(0.92) translateY(20px);
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #lightbox.open #lb-content {
+            transform: scale(1) translateY(0);
+        }
+
+        #lb-content img,
+        #lb-content video {
+            display: block;
+            max-width: 90vw;
+            max-height: 80vh;
+            border-radius: 12px;
+            object-fit: contain;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        #lb-info {
+            position: absolute;
+            bottom: -52px;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+
+        #lb-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100051;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        #lb-close:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        #lb-prev,
+        #lb-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100051;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        #lb-prev {
+            left: 20px;
+        }
+        #lb-next {
+            right: 20px;
+        }
+        #lb-prev:hover,
+        #lb-next:hover {
+            background: rgba(172, 188, 55, 0.15);
+            border-color: rgba(172, 188, 55, 0.3);
+            color: #ACBC37;
+        }
+        #lb-prev.disabled,
+        #lb-next.disabled {
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        #lb-counter {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 3px;
+        }
+
+        @keyframes lbImageIn {
+            from {
+                opacity: 0;
+                filter: blur(8px) brightness(1.5);
+            }
+            to {
+                opacity: 1;
+                filter: blur(0) brightness(1);
+            }
+        }
+        .lb-media-enter {
+            animation: lbImageIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        #lb-content video::-webkit-media-controls-panel {
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        @media (max-width: 640px) {
+            #lb-prev {
+                left: 8px;
+                width: 38px;
+                height: 38px;
+            }
+            #lb-next {
+                right: 8px;
+                width: 38px;
+                height: 38px;
+            }
+            #lb-close {
+                top: 12px;
+                right: 12px;
+                width: 38px;
+                height: 38px;
+            }
+        }
+
+        /* Hero title & description reveal */
+        .hero-title,
+        .hero-desc {
+            opacity: 0;
+            transform: scale(0);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .hero-title.hero-visible,
+        .hero-desc.hero-visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .hero-desc.hero-visible {
+            transition-delay: 0.06s;
+        }
+
+        /* ===== ADDITIONAL RESPONSIVE TWEAKS ===== */
+        @media (max-width: 480px) {
+            .hero-section .scroll-text {
+                font-size: 8px !important;
+                letter-spacing: 0.2em !important;
+            }
+            .hero-section .scroll-line {
+                height: 6px !important;
+            }
+            .container-padding {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+            }
+            .nav-logo {
+                height: 1.75rem !important;
+            }
+        }
+
+        /* Ensure videos and images never overflow */
+        video,
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Lightbox on small screens */
+        @media (max-width: 480px) {
+            #lb-content {
+                max-width: 95vw;
+                max-height: 75vh;
+            }
+            #lb-content img,
+            #lb-content video {
+                max-height: 70vh;
+            }
+            #lb-info {
+                bottom: -40px;
+            }
+            #lb-info span {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Improve touch target sizes */
+        .hoverable {
+            cursor: pointer;
+        }
+        @media (pointer: coarse) {
+            .hoverable {
+                cursor: default;
+            }
+            .contact-link,
+            .cat-tab,
+            .port-card {
+                cursor: default;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress-bar" style="width:0%"></div>
+    <div id="cursor-dot"></div>
+    <div id="cursor-ring"></div>
+
+    <!-- Lightbox -->
+    <div id="lightbox">
+        <button id="lb-close"><iconify-icon icon="lucide:x" width="20"></iconify-icon></button>
+        <button id="lb-prev"><iconify-icon icon="lucide:chevron-left" width="22"></iconify-icon></button>
+        <button id="lb-next"><iconify-icon icon="lucide:chevron-right" width="22"></iconify-icon></button>
+        <div id="lb-counter"></div>
+        <div id="lb-content"></div>
+        <div id="lb-info">
+            <span id="lb-title" class="text-sm font-semibold text-white/80"></span>
+            <span id="lb-cat" class="text-xs text-mx-green ml-2 tracking-wider uppercase font-semibold"></span>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <img src="Images/MXYCOR.png" alt="MXYCOR Logo" class="w-44 mb-2" />
+        <div id="loader-bar"><div id="loader-fill"></div></div>
+        <p class="text-neutral-600 text-xs mt-3 tracking-widest uppercase">Initializing</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav-glass fixed top-0 left-0 right-0 z-[10000] px-4 sm:px-6 py-3 sm:py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="#hero" class="hoverable block">
+                <img src="Images/MXYCOR.png" alt="MXYCOR Logo" class="h-7 sm:h-9 nav-logo" />
+            </a>
+            <div class="hidden md:flex items-center gap-4 lg:gap-8">
+                <a href="#about" class="text-xs sm:text-sm text-neutral-400 hover:text-mx-green transition-colors hoverable">About</a>
+                <a href="#portfolio" class="text-xs sm:text-sm text-neutral-400 hover:text-mx-green transition-colors hoverable">Portfolio</a>
+                <a href="#services" class="text-xs sm:text-sm text-neutral-400 hover:text-mx-green transition-colors hoverable">Services</a>
+                <a href="#workflow" class="text-xs sm:text-sm text-neutral-400 hover:text-mx-green transition-colors hoverable">Workflow</a>
+                <a href="#contact" class="text-xs sm:text-sm text-neutral-400 hover:text-mx-green transition-colors hoverable">Contact</a>
+                <button id="sound-toggle" class="hoverable w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-neutral-800 flex items-center justify-center text-neutral-500 hover:text-mx-green hover:border-mx-green/30 transition-all" title="Toggle Sound">
+                    <iconify-icon icon="lucide:volume-2" width="14" id="sound-icon"></iconify-icon>
+                </button>
+            </div>
+            <button id="menu-btn" class="md:hidden hoverable text-neutral-400">
+                <iconify-icon icon="lucide:menu" width="24"></iconify-icon>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="fixed inset-0 z-[10001] bg-mx-dark/95 backdrop-blur-xl flex flex-col items-center justify-center gap-6 sm:gap-8">
+        <button id="menu-close" class="absolute top-5 right-6 text-neutral-400 hoverable"><iconify-icon icon="lucide:x" width="24"></iconify-icon></button>
+        <a href="#about" class="mobile-link text-xl sm:text-2xl font-semibold text-neutral-300 hover:text-mx-green transition-colors">About</a>
+        <a href="#portfolio" class="mobile-link text-xl sm:text-2xl font-semibold text-neutral-300 hover:text-mx-green transition-colors">Portfolio</a>
+        <a href="#services" class="mobile-link text-xl sm:text-2xl font-semibold text-neutral-300 hover:text-mx-green transition-colors">Services</a>
+        <a href="#workflow" class="mobile-link text-xl sm:text-2xl font-semibold text-neutral-300 hover:text-mx-green transition-colors">Workflow</a>
+        <a href="#contact" class="mobile-link text-xl sm:text-2xl font-semibold text-neutral-300 hover:text-mx-green transition-colors">Contact</a>
+        <button id="sound-toggle-mobile" class="mt-4 w-12 h-12 rounded-full border border-neutral-800 flex items-center justify-center text-neutral-500 hoverable">
+            <iconify-icon icon="lucide:volume-2" width="18" id="sound-icon-mobile"></iconify-icon>
+        </button>
+    </div>
+
+    <!-- ========== HERO ========== -->
+    <section id="hero" class="hero-bg vignette relative min-h-screen flex items-center justify-center overflow-hidden hero-section">
+        <video autoplay muted loop playsinline class="hero-video absolute inset-0 w-full h-full object-cover z-0">
+            <source src="Videos/3D_Cinematics.mp4" type="video/mp4">
+        </video>
+        <div class="orb w-64 h-64 sm:w-96 sm:h-96 bg-mx-green/10 top-1/4 -left-48" style="animation-delay:-5s"></div>
+        <div class="orb w-56 h-56 sm:w-72 sm:h-72 bg-mx-cyan/5 bottom-1/4 -right-36" style="animation-delay:-12s"></div>
+        <div id="particles" class="absolute inset-0 z-[2] pointer-events-none"></div>
+
+        <div class="relative z-10 text-center px-4 sm:px-6 max-w-4xl">
+            <!-- Hero title & description are intentionally removed by user request -->
+        </div>
+        <div class="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1 sm:gap-2">
+            <span class="scroll-text text-[10px] tracking-[0.3em] uppercase text-white font-bold">Scroll</span>
+            <div class="scroll-line w-px h-6 sm:h-8 bg-gradient-to-b from-white to-transparent"></div>
+        </div>
+    </section>
+
+    <!-- ========== ABOUT ========== -->
+    <section id="about" class="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="max-w-3xl">
+                <span class="reveal text-xs tracking-[0.3em] uppercase text-mx-green font-semibold mb-4 block">About</span>
+                <h2 class="reveal reveal-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 sm:mb-8">About MXYCOR</h2>
+                <p class="reveal reveal-delay-2 text-neutral-400 text-sm sm:text-base leading-relaxed mb-6">MXYCOR is an independent creative studio specializing in cinematic Unreal Engine 5 environments, CGI visuals, and immersive digital experiences.</p>
+                <p class="reveal reveal-delay-3 text-neutral-500 text-sm sm:text-base leading-relaxed mb-10">Focused on atmosphere, lighting, composition, and real-time storytelling, MXYCOR combines modern game engine workflows with cinematic presentation to create visually memorable worlds and commercial visuals.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="reveal card-glow bg-mx-card border border-mx-border rounded-2xl p-5 sm:p-6 hoverable"><iconify-icon icon="lucide:monitor" class="text-mx-green mb-3" width="22"></iconify-icon><h3 class="font-semibold text-sm mb-1">UE5 Cinematic Environments</h3><p class="text-xs text-neutral-500">Real-time cinematic worlds with atmospheric lighting</p></div>
+                <div class="reveal reveal-delay-1 card-glow bg-mx-card border border-mx-border rounded-2xl p-5 sm:p-6 hoverable"><iconify-icon icon="lucide:clapperboard" class="text-mx-green mb-3" width="22"></iconify-icon><h3 class="font-semibold text-sm mb-1">CGI Advertisements</h3><p class="text-xs text-neutral-500">Product-focused cinematic commercials</p></div>
+                <div class="reveal reveal-delay-2 card-glow bg-mx-card border border-mx-border rounded-2xl p-5 sm:p-6 hoverable"><iconify-icon icon="lucide:map" class="text-mx-green mb-3" width="22"></iconify-icon><h3 class="font-semibold text-sm mb-1">Environment & Level Design</h3><p class="text-xs text-neutral-500">Immersive spatial design and worldbuilding</p></div>
+                <div class="reveal reveal-delay-1 card-glow bg-mx-card border border-mx-border rounded-2xl p-5 sm:p-6 hoverable"><iconify-icon icon="lucide:film" class="text-mx-green mb-3" width="22"></iconify-icon><h3 class="font-semibold text-sm mb-1">Real-Time Visual Storytelling</h3><p class="text-xs text-neutral-500">Cinematic narratives through game engines</p></div>
+                <div class="reveal reveal-delay-2 card-glow bg-mx-card border border-mx-border rounded-2xl p-5 sm:p-6 hoverable"><iconify-icon icon="lucide:brain-circuit" class="text-mx-green mb-3" width="22"></iconify-icon><h3 class="font-semibold text-sm mb-1">AI-Assisted Workflows</h3><p class="text-xs text-neutral-500">Experimental creative processes with AI tools</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PORTFOLIO ========== -->
+    <section id="portfolio" class="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-mx-card/50">
+        <div class="max-w-7xl mx-auto">
+            <span class="reveal text-xs tracking-[0.3em] uppercase text-mx-green font-semibold mb-4 block">Portfolio</span>
+            <h2 class="reveal reveal-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3">Featured Projects</h2>
+            <p class="reveal reveal-delay-2 text-neutral-500 text-sm sm:text-base mb-8 sm:mb-10 max-w-xl">Selected cinematic environments, CGI advertisements, and experimental visual projects.</p>
+
+            <!-- Showreels -->
+            <div class="reveal reveal-delay-3 mb-10 sm:mb-12">
+                <div class="showreel-label inline-block px-3 py-1 rounded-r-full mb-5">
+                    <span class="text-[10px] tracking-[0.25em] uppercase text-mx-green font-semibold">Showreels</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                    <div class="port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="video" data-src="Videos/3D_Cinematics.mp4" data-title="3D Cinematics" data-cat="Cinematic Showreel">
+                        <video autoplay muted loop playsinline class="w-full aspect-video object-cover"><source src="Videos/3D_Cinematics.mp4" type="video/mp4"></video>
+                        <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/50 to-transparent flex flex-col justify-end p-4 sm:p-5">
+                            <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-0.5">Cinematic Showreel</span>
+                            <h3 class="text-base font-bold tracking-tight">3D Cinematics</h3>
+                        </div>
+                        <div class="play-btn absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"><iconify-icon icon="lucide:play" width="20" class="text-white ml-0.5"></iconify-icon></div></div>
+                    </div>
+                    <div class="port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="video" data-src="Videos/3D_Ads.mp4" data-title="3D Advertisements" data-cat="CGI Ads Showreel">
+                        <video autoplay muted loop playsinline class="w-full aspect-video object-cover"><source src="Videos/3D_Ads.mp4" type="video/mp4"></video>
+                        <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/50 to-transparent flex flex-col justify-end p-4 sm:p-5">
+                            <span class="text-[10px] tracking-[0.2em] uppercase text-mx-cyan font-semibold mb-0.5">CGI Ads Showreel</span>
+                            <h3 class="text-base font-bold tracking-tight">3D Advertisements</h3>
+                        </div>
+                        <div class="play-btn absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"><iconify-icon icon="lucide:play" width="20" class="text-white ml-0.5"></iconify-icon></div></div>
+                    </div>
+                    <div class="port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="video" data-src="Videos/3D_CG.mp4" data-title="3D CG Works" data-cat="CG Showreel">
+                        <video autoplay muted loop playsinline class="w-full aspect-video object-cover"><source src="Videos/3D_CG.mp4" type="video/mp4"></video>
+                        <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/50 to-transparent flex flex-col justify-end p-4 sm:p-5">
+                            <span class="text-[10px] tracking-[0.2em] uppercase text-mx-purple font-semibold mb-0.5">CG Showreel</span>
+                            <h3 class="text-base font-bold tracking-tight">3D CG Works</h3>
+                        </div>
+                        <div class="play-btn absolute inset-0 flex items-center justify-center"><div class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"><iconify-icon icon="lucide:play" width="20" class="text-white ml-0.5"></iconify-icon></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="reveal flex flex-wrap gap-2 mb-8 sm:mb-10">
+                <button class="cat-tab active hoverable text-[10px] sm:text-xs tracking-wider uppercase font-semibold px-3 sm:px-4 py-2 border-b-2 transition-all" data-cat="all">All Projects</button>
+                <button class="cat-tab hoverable text-[10px] sm:text-xs tracking-wider uppercase font-semibold px-3 sm:px-4 py-2 border-b-2 transition-all" data-cat="cinematic">Cinematic Environments</button>
+                <button class="cat-tab hoverable text-[10px] sm:text-xs tracking-wider uppercase font-semibold px-3 sm:px-4 py-2 border-b-2 transition-all" data-cat="cgi">CGI Advertisements</button>
+                <button class="cat-tab hoverable text-[10px] sm:text-xs tracking-wider uppercase font-semibold px-3 sm:px-4 py-2 border-b-2 transition-all" data-cat="ai">Experimental AI</button>
+            </div>
+
+            <!-- Portfolio Grid -->
+            <div class="portfolio-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5" id="portfolio-grid">
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART1.png" data-title="Cyberpunk District" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART1.png" alt="Cyberpunk District" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">Cyberpunk District</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Futuristic city environment with neon lighting, atmosphere, and sci-fi worldbuilding.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART2.png" data-title="Dieselpunk City" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART2.png" alt="Dieselpunk City" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">Dieselpunk City</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Industrial cinematic environment focused on mood, large-scale structures, and atmospheric storytelling.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART3.png" data-title="Liminal Hospital" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART3.png" alt="Liminal Hospital" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">Liminal Hospital</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Psychological liminal-style environment focused on lighting, tension, and cinematic realism.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART4.png" data-title="WarZone" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART4.png" alt="WarZone" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">WarZone</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Large-scale destruction-focused cinematic environment with dramatic atmosphere.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART5.png" data-title="Forest House" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART5.png" alt="Forest House" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">Forest House</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Natural cinematic environment focused on composition, realism, and immersive atmosphere.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART6.png" data-title="Canyons" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART6.png" alt="Canyons" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">Canyons</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Large terrain-focused environment exploring cinematic scale and lighting.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/ART7.png" data-title="RiverBank" data-cat="Cinematic Environment" data-filter="cinematic">
+                    <img src="Images/ART7.png" alt="RiverBank" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-green font-semibold mb-1">Cinematic Environment</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">RiverBank</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Atmospheric natural environment showcasing mood, reflections, and environmental composition.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/CG1.png" data-title="Whey Protein Advertisement" data-cat="CGI Advertisement" data-filter="cgi">
+                    <img src="Images/CG1.png" alt="Whey Protein Ad" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-cyan font-semibold mb-1">CGI Advertisement</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">Whey Protein Advertisement</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Cinematic CGI product advertisement using UE5 and Blender workflows.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="image" data-src="Images/CG2.png" data-title="CG Mascot Advertisement" data-cat="CGI Advertisement" data-filter="cgi">
+                    <img src="Images/CG2.png" alt="CG Mascot Ad" class="w-full aspect-[4/3] object-cover">
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-cyan font-semibold mb-1">CGI Advertisement</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">CG Mascot Advertisement</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Stylized CGI mascot intro animation combining character presentation and cinematic rendering.</p>
+                    </div>
+                </div>
+                <div class="portfolio-item port-card hoverable rounded-2xl overflow-hidden relative group lb-trigger" data-type="video" data-src="Videos/3D_AI.mp4" data-title="AI Anime Assistant Prototype" data-cat="Experimental AI" data-filter="ai">
+                    <video autoplay muted loop playsinline class="w-full aspect-[4/3] object-cover"><source src="Videos/3D_AI.mp4" type="video/mp4"></video>
+                    <div class="port-overlay absolute inset-0 bg-gradient-to-t from-mx-dark via-mx-dark/60 to-transparent flex flex-col justify-end p-4 sm:p-6">
+                        <span class="text-[10px] tracking-[0.2em] uppercase text-mx-purple font-semibold mb-1">Experimental AI</span>
+                        <h3 class="text-base sm:text-lg font-bold tracking-tight">AI Anime Assistant Prototype</h3>
+                        <p class="text-xs text-neutral-400 mt-1">Experimental offline AI assistant integrating voice interaction, lip sync, VRM character workflows, and local AI systems.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== SERVICES ========== -->
+    <section id="services" class="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6">
+        <div class="max-w-7xl mx-auto">
+            <span class="reveal text-xs tracking-[0.3em] uppercase text-mx-green font-semibold mb-4 block">Services</span>
+            <h2 class="reveal reveal-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-10 sm:mb-14">What I Offer</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                <div class="reveal card-glow bg-mx-card border border-mx-border rounded-2xl p-6 sm:p-8 hoverable group"><div class="w-12 h-12 rounded-xl bg-mx-green/10 flex items-center justify-center mb-5 group-hover:bg-mx-green/20 transition-colors"><iconify-icon icon="lucide:monitor" class="text-mx-green" width="22"></iconify-icon></div><h3 class="font-bold text-base mb-2">UE5 Cinematic Environments</h3><p class="text-sm text-neutral-500 leading-relaxed">High-fidelity real-time environments built in Unreal Engine 5 with cinematic lighting and atmosphere.</p></div>
+                <div class="reveal reveal-delay-1 card-glow bg-mx-card border border-mx-border rounded-2xl p-6 sm:p-8 hoverable group"><div class="w-12 h-12 rounded-xl bg-mx-green/10 flex items-center justify-center mb-5 group-hover:bg-mx-green/20 transition-colors"><iconify-icon icon="lucide:clapperboard" class="text-mx-green" width="22"></iconify-icon></div><h3 class="font-bold text-base mb-2">CGI Product Advertisements</h3><p class="text-sm text-neutral-500 leading-relaxed">Cinematic product visuals and commercials using UE5 and Blender rendering pipelines.</p></div>
+                <div class="reveal reveal-delay-2 card-glow bg-mx-card border border-mx-border rounded-2xl p-6 sm:p-8 hoverable group"><div class="w-12 h-12 rounded-xl bg-mx-green/10 flex items-center justify-center mb-5 group-hover:bg-mx-green/20 transition-colors"><iconify-icon icon="lucide:map" class="text-mx-green" width="22"></iconify-icon></div><h3 class="font-bold text-base mb-2">Environment & Level Design</h3><p class="text-sm text-neutral-500 leading-relaxed">Immersive spatial design with focus on composition, scale, and environmental storytelling.</p></div>
+                <div class="reveal card-glow bg-mx-card border border-mx-border rounded-2xl p-6 sm:p-8 hoverable group"><div class="w-12 h-12 rounded-xl bg-mx-green/10 flex items-center justify-center mb-5 group-hover:bg-mx-green/20 transition-colors"><iconify-icon icon="lucide:film" class="text-mx-green" width="22"></iconify-icon></div><h3 class="font-bold text-base mb-2">Cinematic Rendering</h3><p class="text-sm text-neutral-500 leading-relaxed">High-quality visual presentation with cinematic camera work, color grading, and post-processing.</p></div>
+                <div class="reveal reveal-delay-1 card-glow bg-mx-card border border-mx-border rounded-2xl p-6 sm:p-8 hoverable group"><div class="w-12 h-12 rounded-xl bg-mx-green/10 flex items-center justify-center mb-5 group-hover:bg-mx-green/20 transition-colors"><iconify-icon icon="lucide:tv" class="text-mx-green" width="22"></iconify-icon></div><h3 class="font-bold text-base mb-2">Virtual Production Visuals</h3><p class="text-sm text-neutral-500 leading-relaxed">Real-time visual content for virtual production workflows and LED volume environments.</p></div>
+                <div class="reveal reveal-delay-2 card-glow bg-mx-card border border-mx-border rounded-2xl p-6 sm:p-8 hoverable group"><div class="w-12 h-12 rounded-xl bg-mx-green/10 flex items-center justify-center mb-5 group-hover:bg-mx-green/20 transition-colors"><iconify-icon icon="lucide:lightbulb" class="text-mx-green" width="22"></iconify-icon></div><h3 class="font-bold text-base mb-2">Creative Visual Prototyping</h3><p class="text-sm text-neutral-500 leading-relaxed">Fast visual iteration and prototyping for concept validation and creative exploration.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== WORKFLOW ========== -->
+    <section id="workflow" class="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6 bg-mx-card/50">
+        <div class="max-w-4xl mx-auto">
+            <span class="reveal text-xs tracking-[0.3em] uppercase text-mx-green font-semibold mb-4 block">Process</span>
+            <h2 class="reveal reveal-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-12 sm:mb-16">Creative Workflow</h2>
+            <div class="relative">
+                <div class="absolute left-5 md:left-7 top-0 bottom-0 w-px bg-mx-border">
+                    <div class="workflow-line absolute top-0 left-0 w-full h-full" id="wf-line"></div>
+                </div>
+                <div class="space-y-10 sm:space-y-14">
+                    <div class="reveal flex gap-4 sm:gap-6 md:gap-8 items-start" data-step="1"><div class="flex-shrink-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-mx-dark border-2 border-mx-border flex items-center justify-center text-sm font-bold text-neutral-500 step-num transition-all duration-500 font-rajdhani">01</div><div class="pt-1 md:pt-2.5"><h3 class="font-bold text-base sm:text-lg mb-2">Concept & Direction</h3><p class="text-sm text-neutral-500 leading-relaxed">Understanding the visual direction, references, mood, and project goals. Defining the creative foundation before any production begins.</p></div></div>
+                    <div class="reveal reveal-delay-1 flex gap-4 sm:gap-6 md:gap-8 items-start" data-step="2"><div class="flex-shrink-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-mx-dark border-2 border-mx-border flex items-center justify-center text-sm font-bold text-neutral-500 step-num transition-all duration-500 font-rajdhani">02</div><div class="pt-1 md:pt-2.5"><h3 class="font-bold text-base sm:text-lg mb-2">Environment & Visual Development</h3><p class="text-sm text-neutral-500 leading-relaxed">Building cinematic environments, scenes, lighting, atmosphere, and composition. Bringing the concept into a visual reality.</p></div></div>
+                    <div class="reveal reveal-delay-2 flex gap-4 sm:gap-6 md:gap-8 items-start" data-step="3"><div class="flex-shrink-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-mx-dark border-2 border-mx-border flex items-center justify-center text-sm font-bold text-neutral-500 step-num transition-all duration-500 font-rajdhani">03</div><div class="pt-1 md:pt-2.5"><h3 class="font-bold text-base sm:text-lg mb-2">Cinematic Presentation</h3><p class="text-sm text-neutral-500 leading-relaxed">Creating camera animation, visual storytelling, cinematic rendering, and final presentation that delivers maximum impact.</p></div></div>
+                    <div class="reveal reveal-delay-3 flex gap-4 sm:gap-6 md:gap-8 items-start" data-step="4"><div class="flex-shrink-0 w-10 h-10 md:w-14 md:h-14 rounded-full bg-mx-dark border-2 border-mx-border flex items-center justify-center text-sm font-bold text-neutral-500 step-num transition-all duration-500 font-rajdhani">04</div><div class="pt-1 md:pt-2.5"><h3 class="font-bold text-base sm:text-lg mb-2">Final Delivery</h3><p class="text-sm text-neutral-500 leading-relaxed">High-quality rendered visuals, cinematic videos, and optimized project delivery ready for use across all platforms.</p></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== CONTACT ========== -->
+    <section id="contact" class="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6">
+        <div class="max-w-7xl mx-auto">
+            <span class="reveal text-xs tracking-[0.3em] uppercase text-mx-green font-semibold mb-4 block">Contact</span>
+            <h2 class="reveal reveal-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3">Let's Work Together</h2>
+            <p class="reveal reveal-delay-2 text-neutral-500 text-sm sm:text-base mb-8 sm:mb-12 max-w-xl">Open for freelance projects, cinematic visual work, CGI advertisements, and creative collaborations.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Fiverr -->
+                <a href="https://www.fiverr.com/s/DB4LQgy" class="reveal contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
+                    <div class="w-11 h-11 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                        <iconify-icon icon="simple-icons:fiverr" class="text-green-400" width="20"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm">Fiverr</h3>
+                        <p class="text-xs text-neutral-500">Hire on Fiverr</p>
+                    </div>
+                    <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
+                </a>
+
+                <!-- Upwork -->
+                <a href="https://www.upwork.com/freelancers/~01592b26aaee20b398?mp_source=share" class="reveal reveal-delay-1 contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
+                    <div class="w-11 h-11 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                        <iconify-icon icon="simple-icons:upwork" class="text-green-400" width="20"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm">Upwork</h3>
+                        <p class="text-xs text-neutral-500">Hire on Upwork</p>
+                    </div>
+                    <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
+                </a>
+
+                <!-- YouTube -->
+                <a href="https://www.youtube.com/@Mxycor1" class="reveal reveal-delay-2 contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
+                    <div class="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                        <iconify-icon icon="simple-icons:youtube" class="text-red-400" width="20"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm">YouTube</h3>
+                        <p class="text-xs text-neutral-500">Watch cinematic content</p>
+                    </div>
+                    <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
+                </a>
+
+                <!-- ArtStation -->
+                <a href="https://www.artstation.com/mxycor" class="reveal contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
+                    <div class="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                        <iconify-icon icon="simple-icons:artstation" class="text-emerald-400" width="20"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm">ArtStation</h3>
+                        <p class="text-xs text-neutral-500">View full portfolio</p>
+                    </div>
+                    <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
+                </a>
+
+                <!-- Behance -->
+                <a href="https://www.behance.net/Mxycor" class="reveal reveal-delay-1 contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
+                    <div class="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                        <iconify-icon icon="simple-icons:behance" class="text-blue-400" width="20"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-sm">Behance</h3>
+                        <p class="text-xs text-neutral-500">Explore projects</p>
+                    </div>
+                    <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-mx-border py-6 sm:py-10 px-4 sm:px-6 relative">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <img src="Images/MXYCOR.png" alt="MXYCOR Logo" class="h-5 sm:h-6 opacity-100" />
+                <span class="text-[10px] sm:text-xs text-neutral-600">Cinematic Real-Time Visual Experiences</span>
+            </div>
+            <p class="text-[10px] sm:text-xs text-neutral-700">&copy; 2026 MXYCOR. All rights reserved.</p>
+        </div>
+        <!-- Scroll to top button -->
+        <button id="scroll-top" class="hoverable fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-[100002] w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-mx-border bg-mx-card flex items-center justify-center text-neutral-400 hover:text-mx-green hover:border-mx-green/30 transition-all" title="Scroll to top">
+            <iconify-icon icon="lucide:arrow-up" width="16"></iconify-icon>
+        </button>
+    </footer>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100002] bg-mx-card border border-mx-border rounded-full px-4 sm:px-5 py-2 sm:py-2.5 text-xs text-neutral-400 flex items-center gap-2 opacity-0 translate-y-4 transition-all duration-300 pointer-events-none">
+        <iconify-icon icon="lucide:volume-x" width="14" id="toast-icon"></iconify-icon>
+        <span id="toast-text">Sound off</span>
+    </div>
+
+    <script>
+        // ============ SOUND ENGINE ============
+        class SoundEngine {
+            constructor() { this.ctx = null;
+                this.enabled = true;
+                this.initialized = false; }
+            init() { if (this.initialized) return; try { this.ctx = new(window.AudioContext || window.webkitAudioContext)();
+                    this.initialized = true; } catch (e) {} }
+            hover() {
+                if (!this.enabled || !this.ctx) return;
+                try { const o = this.ctx.createOscillator(),
+                        g = this.ctx.createGain();
+                    o.connect(g);
+                    g.connect(this.ctx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(1400, this.ctx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.04);
+                    g.gain.setValueAtTime(0.025, this.ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+                    o.start(this.ctx.currentTime);
+                    o.stop(this.ctx.currentTime + 0.06); } catch (e) {}
+            }
+            click() {
+                if (!this.enabled || !this.ctx) return;
+                try { const o = this.ctx.createOscillator(),
+                        g = this.ctx.createGain();
+                    o.type = 'square';
+                    o.connect(g);
+                    g.connect(this.ctx.destination);
+                    o.frequency.setValueAtTime(250, this.ctx.currentTime);
+                    o.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.1);
+                    g.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+                    o.start(this.ctx.currentTime);
+                    o.stop(this.ctx.currentTime + 0.12); } catch (e) {}
+            }
+            whoosh() {
+                if (!this.enabled || !this.ctx) return;
+                try { const l = this.ctx.sampleRate * 0.18,
+                        b = this.ctx.createBuffer(1, l, this.ctx.sampleRate),
+                        d = b.getChannelData(0); for (let i = 0; i < l; i++) d[i] = (Math.random() * 2 - 1);
+                    const s = this.ctx.createBufferSource();
+                    s.buffer = b;
+                    const f = this.ctx.createBiquadFilter();
+                    f.type = 'bandpass';
+                    f.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                    f.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.18);
+                    f.Q.value = 1.5;
+                    const g = this.ctx.createGain();
+                    g.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.18);
+                    s.connect(f);
+                    f.connect(g);
+                    g.connect(this.ctx.destination);
+                    s.start(this.ctx.currentTime); } catch (e) {}
+            }
+            toggle() { this.enabled = !this.enabled; return this.enabled; }
+        }
+        const sound = new SoundEngine();
+
+        function initAudio() { sound.init();
+            document.removeEventListener('click', initAudio);
+            document.removeEventListener('touchstart', initAudio); }
+        document.addEventListener('click', initAudio);
+        document.addEventListener('touchstart', initAudio);
+
+        // ============ LOADER ============
+        const loaderFill = document.getElementById('loader-fill'),
+            loader = document.getElementById('loader');
+        let loadProgress = 0;
+        const loadInterval = setInterval(() => {
+            loadProgress += Math.random() * 25 + 10;
+            if (loadProgress >= 100) { loadProgress = 100;
+                loaderFill.style.width = '100%';
+                clearInterval(loadInterval);
+                setTimeout(() => loader.classList.add('hidden'), 400); } else loaderFill.style.width = loadProgress + '%';
+        }, 200);
+        loader.addEventListener('click', () => { clearInterval(loadInterval);
+            loader.classList.add('hidden'); });
+
+        // ============ CURSOR ============
+        const dot = document.getElementById('cursor-dot'),
+            ring = document.getElementById('cursor-ring');
+        let mouseX = 0,
+            mouseY = 0,
+            ringX = 0,
+            ringY = 0;
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX;
+            mouseY = e.clientY;
+            dot.style.left = mouseX - 4 + 'px';
+            dot.style.top = mouseY - 4 + 'px'; });
+
+        function animateCursor() { ringX += (mouseX - ringX) * 0.15;
+            ringY += (mouseY - ringY) * 0.15;
+            ring.style.left = ringX - 18 + 'px';
+            ring.style.top = ringY - 18 + 'px';
+            requestAnimationFrame(animateCursor); }
+        animateCursor();
+        document.querySelectorAll('.hoverable').forEach(el => {
+            el.addEventListener('mouseenter', () => { ring.classList.add('hovering');
+                sound.hover(); });
+            el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+        });
+
+        // ============ SCROLL PROGRESS ============
+        const progressBar = document.getElementById('progress-bar');
+        window.addEventListener('scroll', () => { progressBar.style.width = (window.scrollY / (document.documentElement
+                .scrollHeight - window.innerHeight)) * 100 + '%'; });
+
+        // ============ PARTICLES ============
+        const pc = document.getElementById('particles');
+        for (let i = 0; i < 25; i++) {
+            const p = document.createElement('div');
+            p.classList.add('particle');
+            const s = Math.random() * 2 + 1,
+                g = Math.random() > 0.5;
+            p.style.cssText =
+                `width:${s}px;height:${s}px;left:${Math.random()*100}%;bottom:-10px;background:${g?'rgba(172,188,55,0.4)':'rgba(0,240,255,0.3)'};animation-duration:${Math.random()*15+10}s;animation-delay:${Math.random()*15}s;box-shadow:0 0 ${s*3}px ${g?'rgba(172,188,55,0.3)':'rgba(0,240,255,0.2)'};`;
+            pc.appendChild(p);
+        }
+
+        // ============ PORTFOLIO FILTER ============
+        const catTabs = document.querySelectorAll('.cat-tab'),
+            portItems = document.querySelectorAll('.portfolio-item');
+        catTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                sound.click();
+                catTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const cat = tab.dataset.cat;
+                portItems.forEach(item => {
+                    if (cat === 'all' || item.dataset.filter === cat) { item.classList.remove('hidden-item');
+                        item.style.position = 'relative';
+                        item.style.visibility = 'visible'; } else item.classList.add('hidden-item');
+                });
+            });
+        });
+
+        // ============ LIGHTBOX ============
+        const lightbox = document.getElementById('lightbox');
+        const lbContent = document.getElementById('lb-content');
+        const lbTitle = document.getElementById('lb-title');
+        const lbCat = document.getElementById('lb-cat');
+        const lbCounter = document.getElementById('lb-counter');
+        const lbPrev = document.getElementById('lb-prev');
+        const lbNext = document.getElementById('lb-next');
+        const lbClose = document.getElementById('lb-close');
+
+        const galleryItems = [];
+        document.querySelectorAll('.lb-trigger').forEach((el, i) => {
+            galleryItems.push({
+                type: el.dataset.type,
+                src: el.dataset.src,
+                title: el.dataset.title,
+                cat: el.dataset.cat
+            });
+            el.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                sound.click();
+                openLightbox(i);
+            });
+        });
+
+        let currentIndex = 0;
+        let currentVideo = null;
+
+        function openLightbox(index) {
+            currentIndex = index;
+            const item = galleryItems[index];
+            lightbox.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            document.querySelectorAll('#portfolio video').forEach(v => v.pause());
+            lbCounter.textContent = `${index + 1} / ${galleryItems.length}`;
+            lbTitle.textContent = item.title;
+            lbCat.textContent = item.cat;
+            lbPrev.classList.toggle('disabled', index === 0);
+            lbNext.classList.toggle('disabled', index === galleryItems.length - 1);
+            lbContent.innerHTML = '';
+            if (item.type === 'video') {
+                const video = document.createElement('video');
+                video.src = item.src;
+                video.controls = true;
+                video.autoplay = true;
+                video.muted = false;
+                video.playsInline = true;
+                video.classList.add('lb-media-enter');
+                video.style.maxWidth = '90vw';
+                video.style.maxHeight = '80vh';
+                video.style.borderRadius = '12px';
+                video.style.boxShadow = '0 25px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)';
+                lbContent.appendChild(video);
+                currentVideo = video;
+            } else {
+                const img = document.createElement('img');
+                img.src = item.src;
+                img.alt = item.title;
+                img.classList.add('lb-media-enter');
+                img.draggable = false;
+                lbContent.appendChild(img);
+                currentVideo = null;
+            }
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('open');
+            document.body.style.overflow = '';
+            if (currentVideo) { currentVideo.pause();
+                currentVideo = null; }
+            setTimeout(() => {
+                document.querySelectorAll('#portfolio video').forEach(v => { v.muted = true;
+                    v.play().catch(() => {}); });
+            }, 400);
+        }
+
+        function navigateLightbox(dir) {
+            const newIndex = currentIndex + dir;
+            if (newIndex < 0 || newIndex >= galleryItems.length) return;
+            if (currentVideo) currentVideo.pause();
+            sound.click();
+            openLightbox(newIndex);
+        }
+        lbClose.addEventListener('click', closeLightbox);
+        lbPrev.addEventListener('click', () => navigateLightbox(-1));
+        lbNext.addEventListener('click', () => navigateLightbox(1));
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) closeLightbox();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+        });
+
+        // ============ SCROLL REVEAL ============
+        const revealObs = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) { entry.target.classList.add('visible');
+                    sound.whoosh(); const s = entry.target.dataset.step; if (s) activateStep(s); }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+        // ============ WORKFLOW ============
+        const wfLine = document.getElementById('wf-line'),
+            stepNums = document.querySelectorAll('.step-num');
+        let currentStep = 0;
+
+        function activateStep(step) {
+            const s = parseInt(step);
+            if (s > currentStep) {
+                currentStep = s;
+                wfLine.style.height = (((s - 1) / 3) * 100 + 25) + '%';
+                stepNums.forEach((n, i) => { if (i < s) { n.style.borderColor = '#ACBC37';
+                        n.style.color = '#ACBC37';
+                        n.style.background = 'rgba(172,188,55,0.1)'; } });
+            }
+        }
+
+        // ============ HERO TITLE & DESCRIPTION REVEAL (HOVER + SCROLL) ============
+        function revealHeroText() {
+            const heroTitle = document.querySelector('.hero-title');
+            const heroDesc = document.querySelector('.hero-desc');
+            if (heroTitle) heroTitle.classList.add('hero-visible');
+            if (heroDesc) heroDesc.classList.add('hero-visible');
+        }
+        const heroTitleElem = document.querySelector('.hero-title');
+        const heroDescElem = document.querySelector('.hero-desc');
+        if (heroTitleElem) heroTitleElem.addEventListener('mouseenter', revealHeroText);
+        if (heroDescElem) heroDescElem.addEventListener('mouseenter', revealHeroText);
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 0) revealHeroText();
+        });
+        if (window.scrollY > 0) revealHeroText();
+
+        // ============ SOUND TOGGLE ============
+        function toggleSound() {
+            sound.init();
+            const on = sound.toggle(),
+                ic = on ? 'lucide:volume-2' : 'lucide:volume-x';
+            document.getElementById('sound-icon').setAttribute('icon', ic);
+            document.getElementById('sound-icon-mobile').setAttribute('icon', ic);
+            showToast(on ? 'Sound on' : 'Sound off', ic);
+        }
+        document.getElementById('sound-toggle').addEventListener('click', (e) => { e.stopPropagation();
+            toggleSound(); });
+        document.getElementById('sound-toggle-mobile').addEventListener('click', toggleSound);
+
+        // ============ TOAST ============
+        function showToast(text, icon) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-text').textContent = text;
+            document.getElementById('toast-icon').setAttribute('icon', icon);
+            t.style.opacity = '1';
+            t.style.transform = 'translate(-50%, 0)';
+            setTimeout(() => { t.style.opacity = '0';
+                t.style.transform = 'translate(-50%, 1rem)'; }, 1800);
+        }
+
+        // ============ MOBILE MENU ============
+        const mm = document.getElementById('mobile-menu');
+        document.getElementById('menu-btn').addEventListener('click', () => { sound.click();
+            mm.classList.add('open'); });
+        document.getElementById('menu-close').addEventListener('click', () => { sound.click();
+            mm.classList.remove('open'); });
+        document.querySelectorAll('.mobile-link').forEach(l => l.addEventListener('click', () => { sound.click();
+            mm.classList.remove('open'); }));
+
+        // ============ CARD GLOW ============
+        document.querySelectorAll('.card-glow').forEach(c => {
+            c.addEventListener('mousemove', (e) => { const r = c.getBoundingClientRect();
+                c.style.setProperty('--mouse-x', (e.clientX - r.left) + 'px');
+                c.style.setProperty('--mouse-y', (e.clientY - r.top) + 'px'); });
+        });
+
+        // ============ CLICK SOUNDS ============
+        document.querySelectorAll('a, button').forEach(el => el.addEventListener('click', () => sound.click()));
+
+        // ============ SCROLL TO TOP ============
+        document.getElementById('scroll-top').addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+
+</body>
+</html>
