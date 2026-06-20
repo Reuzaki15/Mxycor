@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://reuzaki15.github.io/Mxycor/sitemap.xml
