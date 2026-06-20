@@ -306,13 +306,11 @@
         .portfolio-item {
             transition: opacity 0.5s ease, transform 0.5s ease;
         }
+       
         .portfolio-item.hidden-item {
-            opacity: 0;
-            transform: scale(0.9);
-            pointer-events: none;
-            position: absolute;
-            visibility: hidden;
+            display: none;
         }
+
         .portfolio-grid {
             position: relative;
         }
@@ -1002,7 +1000,9 @@
             <span class="reveal text-xs tracking-[0.3em] uppercase text-mx-green font-semibold mb-4 block">Contact</span>
             <h2 class="reveal reveal-delay-1 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3">Let's Work Together</h2>
             <p class="reveal reveal-delay-2 text-neutral-500 text-sm sm:text-base mb-8 sm:mb-12 max-w-xl">Open for freelance projects, cinematic visual work, CGI advertisements, and creative collaborations.</p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+
                 <!-- YouTube -->
                 <a href="https://www.youtube.com/@Mxycor1" class="reveal contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
                     <div class="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
@@ -1010,7 +1010,7 @@
                     </div>
                     <div>
                         <h3 class="font-semibold text-sm">YouTube</h3>
-                        <p class="text-xs text-neutral-500">Watch cinematic content</p>
+                        <p class="text-xs text-neutral-500">content</p>
                     </div>
                     <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
                 </a>
@@ -1022,7 +1022,7 @@
                     </div>
                     <div>
                         <h3 class="font-semibold text-sm">ArtStation</h3>
-                        <p class="text-xs text-neutral-500">View full portfolio</p>
+                        <p class="text-xs text-neutral-500">portfolio</p>
                     </div>
                     <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
                 </a>
@@ -1034,10 +1034,23 @@
                     </div>
                     <div>
                         <h3 class="font-semibold text-sm">Behance</h3>
-                        <p class="text-xs text-neutral-500">Explore projects</p>
+                        <p class="text-xs text-neutral-500">projects</p>
                     </div>
                     <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
                 </a>
+
+                <!-- Gmail -->
+<a href="https://mail.google.com/mail/?view=cm&to=m.xycor@gmail.com" class="reveal reveal-delay-3 contact-link hoverable border border-mx-border rounded-2xl p-5 sm:p-6 flex items-center gap-4 bg-mx-card">
+    <div class="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
+        <iconify-icon icon="simple-icons:gmail" class="text-red-400" width="20"></iconify-icon>
+    </div>
+    <div>
+        <h3 class="font-semibold text-sm">Gmail</h3>
+        <p class="text-xs text-neutral-500">message</p>
+    </div>
+    <iconify-icon icon="lucide:arrow-up-right" class="ml-auto text-neutral-600" width="16"></iconify-icon>
+</a>         
+
             </div>
         </div>
     </section>
